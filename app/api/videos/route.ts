@@ -32,6 +32,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json<ApiResponse<null>>({ data: null, error: 'Données manquantes' }, { status: 400 })
   }
 
+  if (!body.r2_key.startsWith(`${userData.org_id}/`)) {
+    return NextResponse.json<ApiResponse<null>>({ data: null, error: 'Clé de stockage invalide' }, { status: 400 })
+  }
+
+  if (body.format !== 'short' && body.format !== 'long') {
+    return NextResponse.json<ApiResponse<null>>({ data: null, error: 'Format de vidéo invalide' }, { status: 400 })
+  }
+
+  if (typeof body.file_size !== 'number' || !Number.isFinite(body.file_size) || body.file_size <= 0) {
+    return NextResponse.json<ApiResponse<null>>({ data: null, error: 'Taille de fichier invalide' }, { status: 400 })
+  }
+
+  if (typeof body.duration !== 'number' || !Number.isFinite(body.duration) || body.duration < 0) {
+    return NextResponse.json<ApiResponse<null>>({ data: null, error: 'Durée invalide' }, { status: 400 })
+  }
+
   const { data: video, error } = await supabase
     .from('videos')
     .insert({
@@ -49,7 +65,8 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (error) {
-    return NextResponse.json<ApiResponse<null>>({ data: null, error: error.message }, { status: 500 })
+    console.error('[POST /api/videos] insert failed:', error)
+    return NextResponse.json<ApiResponse<null>>({ data: null, error: "Erreur lors de l'enregistrement de la vidéo" }, { status: 500 })
   }
 
   return NextResponse.json<ApiResponse<Video>>({ data: video, error: null })
