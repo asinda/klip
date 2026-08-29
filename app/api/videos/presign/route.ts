@@ -45,12 +45,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json<ApiResponse<null>>({ data: null, error: 'Fichier trop volumineux' }, { status: 400 })
   }
 
-  const key = generateR2Key(userData.org_id, body.kind, body.filename)
-  const uploadUrl = await getPresignedUploadUrl(key, body.contentType)
-  const publicUrl = buildPublicUrl(key)
+  try {
+    const key = generateR2Key(userData.org_id, body.kind, body.filename)
+    const uploadUrl = await getPresignedUploadUrl(key, body.contentType)
+    const publicUrl = buildPublicUrl(key)
 
-  return NextResponse.json<ApiResponse<{ uploadUrl: string; key: string; publicUrl: string }>>({
-    data: { uploadUrl, key, publicUrl },
-    error: null,
-  })
+    return NextResponse.json<ApiResponse<{ uploadUrl: string; key: string; publicUrl: string }>>({
+      data: { uploadUrl, key, publicUrl },
+      error: null,
+    })
+  } catch (error) {
+    console.error('[POST /api/videos/presign] failed:', error)
+    return NextResponse.json<ApiResponse<null>>({ data: null, error: "Erreur lors de la préparation de l'upload" }, { status: 500 })
+  }
 }
