@@ -170,7 +170,7 @@ NEXTAUTH_URL=
 ### Phase 1 — MVP vendable (objectif : 60 jours)
 - [ ] Auth Supabase (email + magic link)
 - [ ] Dashboard minimal : liste comptes + vidéos
-- [ ] Upload vidéo drag & drop → Cloudflare R2
+- [x] Upload vidéo drag & drop → Cloudflare R2
 - [ ] OAuth TikTok guidé (3 clics)
 - [ ] Scheduling simple : date/heure par vidéo
 - [ ] Worker BullMQ + publication TikTok
