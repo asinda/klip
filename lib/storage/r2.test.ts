@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { isAllowedFileType, isAllowedFileSize, generateR2Key, buildPublicUrl } from './r2'
+import { isAllowedFileType, isAllowedFileSize, generateR2Key, buildPublicUrl, isOwnOrgKey } from './r2'
 
 describe('isAllowedFileType', () => {
   it('accepts mp4 for video', () => {
@@ -60,5 +60,24 @@ describe('buildPublicUrl', () => {
 
   it('joins the base url and key without a double slash', () => {
     expect(buildPublicUrl('org-1/videos/abc.mp4')).toBe('https://pub-test.r2.dev/org-1/videos/abc.mp4')
+  })
+
+  it('throws when R2_PUBLIC_URL is not configured', () => {
+    delete process.env.R2_PUBLIC_URL
+    expect(() => buildPublicUrl('org-1/videos/abc.mp4')).toThrow()
+  })
+})
+
+describe('isOwnOrgKey', () => {
+  it('accepts a key prefixed with the given org id', () => {
+    expect(isOwnOrgKey('org-123', 'org-123/videos/abc.mp4')).toBe(true)
+  })
+
+  it('rejects a key belonging to a different org', () => {
+    expect(isOwnOrgKey('org-123', 'org-456/videos/abc.mp4')).toBe(false)
+  })
+
+  it('rejects a non-string value', () => {
+    expect(isOwnOrgKey('org-123', undefined as unknown as string)).toBe(false)
   })
 })

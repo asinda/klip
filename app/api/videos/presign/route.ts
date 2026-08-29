@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const key = generateR2Key(userData.org_id, body.kind, body.filename)
-    const uploadUrl = await getPresignedUploadUrl(key, body.contentType)
+    const uploadUrl = await getPresignedUploadUrl(key, body.contentType, body.fileSize)
     const publicUrl = buildPublicUrl(key)
 
     return NextResponse.json<ApiResponse<{ uploadUrl: string; key: string; publicUrl: string }>>({
