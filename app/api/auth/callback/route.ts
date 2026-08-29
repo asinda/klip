@@ -2,10 +2,17 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
+function safeRedirectPath(path: string | null): string {
+  if (path && path.startsWith('/') && !path.startsWith('//') && !path.includes('://')) {
+    return path
+  }
+  return '/dashboard'
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/dashboard'
+  const next = safeRedirectPath(searchParams.get('next'))
 
   if (!code) {
     return NextResponse.redirect(new URL('/login?error=no_code', request.url))
