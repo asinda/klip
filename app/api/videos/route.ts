@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { isOwnOrgKey, buildPublicUrl } from '@/lib/storage/r2'
 import type { ApiResponse, Video, VideoFormat } from '@/lib/types'
 
 interface CreateVideoBody {
   title: string
   r2_key: string
-  r2_url: string
-  thumbnail_url: string | null
+  thumbnail_key: string | null
   file_size: number
   duration: number
   format: VideoFormat
@@ -28,12 +28,16 @@ export async function POST(request: NextRequest) {
 
   const body: CreateVideoBody = await request.json()
 
-  if (!body.title || !body.r2_key || !body.r2_url) {
+  if (!body.title || !body.r2_key) {
     return NextResponse.json<ApiResponse<null>>({ data: null, error: 'Données manquantes' }, { status: 400 })
   }
 
-  if (!body.r2_key.startsWith(`${userData.org_id}/`)) {
+  if (!isOwnOrgKey(userData.org_id, body.r2_key)) {
     return NextResponse.json<ApiResponse<null>>({ data: null, error: 'Clé de stockage invalide' }, { status: 400 })
+  }
+
+  if (body.thumbnail_key !== null && !isOwnOrgKey(userData.org_id, body.thumbnail_key)) {
+    return NextResponse.json<ApiResponse<null>>({ data: null, error: 'Clé de miniature invalide' }, { status: 400 })
   }
 
   if (body.format !== 'short' && body.format !== 'long') {
@@ -48,26 +52,33 @@ export async function POST(request: NextRequest) {
     return NextResponse.json<ApiResponse<null>>({ data: null, error: 'Durée invalide' }, { status: 400 })
   }
 
-  const { data: video, error } = await supabase
-    .from('videos')
-    .insert({
-      org_id: userData.org_id,
-      title: body.title,
-      r2_key: body.r2_key,
-      r2_url: body.r2_url,
-      thumbnail_url: body.thumbnail_url,
-      file_size: body.file_size,
-      duration: body.duration,
-      format: body.format,
-      status: 'uploaded',
-    })
-    .select()
-    .single()
+  try {
+    const r2Url = buildPublicUrl(body.r2_key)
+    const thumbnailUrl = body.thumbnail_key ? buildPublicUrl(body.thumbnail_key) : null
 
-  if (error) {
-    console.error('[POST /api/videos] insert failed:', error)
+    const { data: video, error } = await supabase
+      .from('videos')
+      .insert({
+        org_id: userData.org_id,
+        title: body.title,
+        r2_key: body.r2_key,
+        r2_url: r2Url,
+        thumbnail_url: thumbnailUrl,
+        file_size: body.file_size,
+        duration: body.duration,
+        format: body.format,
+        status: 'uploaded',
+      })
+      .select()
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    return NextResponse.json<ApiResponse<Video>>({ data: video, error: null })
+  } catch (error) {
+    console.error('[POST /api/videos] failed:', error)
     return NextResponse.json<ApiResponse<null>>({ data: null, error: "Erreur lors de l'enregistrement de la vidéo" }, { status: 500 })
   }
-
-  return NextResponse.json<ApiResponse<Video>>({ data: video, error: null })
 }

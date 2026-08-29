@@ -106,8 +106,7 @@ export default function VideoUploader() {
         body: JSON.stringify({
           title: deriveTitleFromFilename(file.name),
           r2_key: videoUpload.key,
-          r2_url: videoUpload.publicUrl,
-          thumbnail_url: thumbnailUpload.publicUrl,
+          thumbnail_key: thumbnailUpload.key,
           file_size: file.size,
           duration,
           format: deriveFormat(duration),
