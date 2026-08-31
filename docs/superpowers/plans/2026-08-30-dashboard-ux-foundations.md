@@ -341,7 +341,7 @@ git commit -m "feat: add base ui primitives (Button, Card, Badge, Skeleton, Empt
 
 **Interfaces:**
 - Consumes: `JobStatus`, `VideoStatus`, `Platform` types from `lib/types.ts` (already exist, unchanged).
-- Produces (consumed by Tasks 7 and 9): `getJobStatusBadge(status: JobStatus): { label: string; className: string }`, `getVideoStatusBadge(status: VideoStatus): { label: string; className: string }`, `getPlatformBadge(platform: Platform): { label: string; className: string }`.
+- Produces: `getJobStatusBadge(status: JobStatus): { label: string; className: string }` (consumed by Task 7), `getVideoStatusBadge(status: VideoStatus): { label: string; className: string }` (consumed by Task 9), `getPlatformBadge(platform: Platform): { label: string; className: string }` (consumed by Task 8).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1113,8 +1113,9 @@ git commit -m "fix: scope publish_jobs stats to caller's org, migrate dashboard 
 - Create: `app/(dashboard)/dashboard/accounts/loading.tsx`
 
 **Interfaces:**
-- Consumes: `Card` (Task 3), `EmptyState` (Task 3), `Dialog`/`DialogTrigger`/`DialogContent`/`DialogHeader`/`DialogTitle`/`DialogDescription`/`DialogFooter`/`DialogClose` (Task 5), `Button` (Task 3), `Skeleton` (Task 3).
+- Consumes: `Card` (Task 3), `EmptyState` (Task 3), `Dialog`/`DialogTrigger`/`DialogContent`/`DialogHeader`/`DialogTitle`/`DialogDescription`/`DialogFooter`/`DialogClose` (Task 5), `Button` (Task 3), `Skeleton` (Task 3), `getPlatformBadge` (Task 4).
 - `AccountCard`'s existing `Props` (`{ account: SocialAccount }`) is unchanged, so its caller (`accounts/page.tsx`) needs no interface change, only the empty-state JSX changes.
+- This is the first and only consumer of `getPlatformBadge` in this plan — it replaces `AccountCard`'s previous hardcoded platform pill (`bg-black text-white` for TikTok / `bg-red-600/20 text-red-400` for YouTube) with the shared mapping, as a small colored dot + label rather than a solid pill, consistent with the calm/neutral direction validated during design (color reserved for meaning, not decoration).
 
 - [ ] **Step 1: Replace `components/dashboard/AccountCard.tsx`**
 
@@ -1127,6 +1128,8 @@ import type { SocialAccount } from '@/lib/types'
 import { toast } from 'sonner'
 import { useState } from 'react'
 import { Trash2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { getPlatformBadge } from '@/lib/status'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -1159,7 +1162,7 @@ export default function AccountCard({ account }: Props) {
     }
   }
 
-  const isPlatformTikTok = account.platform === 'tiktok'
+  const platform = getPlatformBadge(account.platform)
   const tokenExpired = account.token_expires_at
     ? new Date(account.token_expires_at) < new Date()
     : false
@@ -1178,8 +1181,9 @@ export default function AccountCard({ account }: Props) {
           )}
           <div>
             <p className="font-medium text-foreground">@{account.username}</p>
-            <span className={`text-xs px-2 py-0.5 rounded-full ${isPlatformTikTok ? 'bg-black text-white' : 'bg-red-600/20 text-red-400'}`}>
-              {isPlatformTikTok ? 'TikTok' : 'YouTube'}
+            <span className={cn('flex items-center gap-1.5 text-xs', platform.className)}>
+              <span className="h-1.5 w-1.5 rounded-full bg-current" />
+              {platform.label}
             </span>
           </div>
         </div>
