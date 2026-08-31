@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTheme } from 'next-themes'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard,
@@ -46,6 +46,7 @@ export default function Sidebar({ user }: Props) {
   const [open, setOpen] = useState(false)
   const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
+  const logoutFormRef = useRef<HTMLFormElement>(null)
 
   useEffect(() => setMounted(true), [])
 
@@ -131,24 +132,26 @@ export default function Sidebar({ user }: Props) {
           </Button>
 
           {user?.email && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex-1 justify-start gap-2 px-3">
-                  <span className="text-xs text-muted-foreground truncate">{user.email}</span>
-                  <MoreVertical size={14} className="ml-auto text-muted-foreground" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem asChild>
-                  <form action="/api/auth/logout" method="POST" className="w-full">
-                    <button type="submit" className="flex w-full items-center gap-2 text-destructive">
-                      <LogOut size={16} />
-                      Déconnexion
-                    </button>
-                  </form>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <>
+              <form ref={logoutFormRef} action="/api/auth/logout" method="POST" className="hidden" />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex-1 justify-start gap-2 px-3">
+                    <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+                    <MoreVertical size={14} className="ml-auto text-muted-foreground" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem
+                    className="text-destructive"
+                    onSelect={() => logoutFormRef.current?.requestSubmit()}
+                  >
+                    <LogOut size={16} />
+                    Déconnexion
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
           )}
         </div>
       </aside>
