@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import ConnectAccountButtons from '@/components/dashboard/ConnectAccountButtons'
 import AccountCard from '@/components/dashboard/AccountCard'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Plug } from 'lucide-react'
 import type { SocialAccount } from '@/lib/types'
 
 export default async function AccountsPage() {
@@ -21,8 +23,8 @@ export default async function AccountsPage() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white">Comptes connectés</h1>
-          <p className="text-slate-400 mt-1">Gérez vos comptes TikTok et YouTube</p>
+          <h1 className="text-2xl font-bold text-foreground">Comptes connectés</h1>
+          <p className="text-muted-foreground mt-1">Gérez vos comptes TikTok et YouTube</p>
         </div>
         <ConnectAccountButtons />
       </div>
@@ -34,14 +36,12 @@ export default async function AccountsPage() {
           ))}
         </div>
       ) : (
-        <div className="bg-slate-900 border border-dashed border-white/10 rounded-xl p-16 text-center">
-          <div className="text-5xl mb-4">🔌</div>
-          <h2 className="text-white font-semibold text-lg mb-2">Aucun compte connecté</h2>
-          <p className="text-slate-400 text-sm max-w-sm mx-auto mb-6">
-            Connecte ton premier compte TikTok ou YouTube pour commencer à publier automatiquement.
-          </p>
-          <ConnectAccountButtons />
-        </div>
+        <EmptyState
+          icon={Plug}
+          title="Aucun compte connecté"
+          description="Connecte ton premier compte TikTok ou YouTube pour commencer à publier automatiquement."
+          action={<ConnectAccountButtons />}
+        />
       )}
     </div>
   )
