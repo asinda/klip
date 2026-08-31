@@ -2,6 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useTheme } from 'next-themes'
+import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard,
@@ -12,8 +14,17 @@ import {
   LogOut,
   Menu,
   X,
+  Sun,
+  Moon,
+  MoreVertical,
 } from 'lucide-react'
-import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu'
 
 const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -33,16 +44,22 @@ interface Props {
 export default function Sidebar({ user }: Props) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
+  const { resolvedTheme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => setMounted(true), [])
 
   return (
     <>
       {/* Mobile toggle */}
-      <button
+      <Button
+        variant="outline"
+        size="icon"
         onClick={() => setOpen(true)}
-        className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-slate-800"
+        className="md:hidden fixed top-4 left-4 z-50"
       >
         <Menu size={20} />
-      </button>
+      </Button>
 
       {/* Overlay */}
       {open && (
@@ -55,25 +72,25 @@ export default function Sidebar({ user }: Props) {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed md:relative inset-y-0 left-0 z-50 w-60 flex flex-col bg-slate-900 border-r border-white/5 transition-transform duration-200',
+          'fixed md:relative inset-y-0 left-0 z-50 w-60 flex flex-col bg-card border-r border-border transition-transform duration-200',
           open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         )}
       >
         {/* Logo */}
-        <div className="flex items-center justify-between px-5 py-5 border-b border-white/5">
-          <span className="text-xl font-bold">
-            KLIP<span className="text-purple-400">.</span>
+        <div className="flex items-center justify-between px-5 py-5 border-b border-border">
+          <span className="text-xl font-bold text-foreground">
+            KLIP<span className="text-primary">.</span>
           </span>
-          <button onClick={() => setOpen(false)} className="md:hidden">
-            <X size={18} className="text-slate-400" />
+          <button onClick={() => setOpen(false)} className="md:hidden text-muted-foreground">
+            <X size={18} />
           </button>
         </div>
 
         {/* Org name */}
         {user?.organizations?.name && (
-          <div className="px-5 py-3 border-b border-white/5">
-            <p className="text-xs text-slate-500 uppercase tracking-wider">Organisation</p>
-            <p className="text-sm text-slate-300 font-medium mt-0.5 truncate">
+          <div className="px-5 py-3 border-b border-border">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">Organisation</p>
+            <p className="text-sm text-foreground font-medium mt-0.5 truncate">
               {user.organizations.name}
             </p>
           </div>
@@ -91,8 +108,8 @@ export default function Sidebar({ user }: Props) {
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                   active
-                    ? 'bg-purple-600/20 text-purple-300'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                 )}
               >
                 <Icon size={18} />
@@ -102,20 +119,37 @@ export default function Sidebar({ user }: Props) {
           })}
         </nav>
 
-        {/* Bottom: user + logout */}
-        <div className="px-3 pb-4 border-t border-white/5 pt-4">
+        {/* Bottom: theme toggle + user menu */}
+        <div className="px-3 pb-4 border-t border-border pt-4 flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+            aria-label="Changer de thème"
+          >
+            {mounted && resolvedTheme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </Button>
+
           {user?.email && (
-            <p className="text-xs text-slate-500 truncate px-3 mb-2">{user.email}</p>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex-1 justify-start gap-2 px-3">
+                  <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+                  <MoreVertical size={14} className="ml-auto text-muted-foreground" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem asChild>
+                  <form action="/api/auth/logout" method="POST" className="w-full">
+                    <button type="submit" className="flex w-full items-center gap-2 text-destructive">
+                      <LogOut size={16} />
+                      Déconnexion
+                    </button>
+                  </form>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
-          <form action="/api/auth/logout" method="POST">
-            <button
-              type="submit"
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-400 hover:text-red-400 hover:bg-red-500/10 w-full transition-colors"
-            >
-              <LogOut size={18} />
-              Déconnexion
-            </button>
-          </form>
         </div>
       </aside>
     </>
