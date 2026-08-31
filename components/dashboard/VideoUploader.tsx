@@ -138,21 +138,21 @@ export default function VideoUploader() {
       {...getRootProps()}
       className={cn(
         'border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-colors',
-        isDragActive ? 'border-purple-500 bg-purple-500/5' : 'border-white/10 hover:border-white/20',
+        isDragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-foreground/20',
         uploading && 'opacity-60 cursor-not-allowed'
       )}
     >
       <input {...getInputProps()} />
       {uploading ? (
-        <div className="flex flex-col items-center gap-2 text-slate-400">
+        <div className="flex flex-col items-center gap-2 text-muted-foreground">
           <Loader2 size={28} className="animate-spin" />
           <p className="text-sm">Upload en cours...</p>
         </div>
       ) : (
-        <div className="flex flex-col items-center gap-2 text-slate-400">
+        <div className="flex flex-col items-center gap-2 text-muted-foreground">
           <UploadCloud size={28} />
           <p className="text-sm">Glisse une vidéo ici ou clique pour choisir un fichier</p>
-          <p className="text-xs text-slate-500">MP4 ou MOV, 500 Mo max</p>
+          <p className="text-xs text-muted-foreground/70">MP4 ou MOV, 500 Mo max</p>
         </div>
       )}
     </div>

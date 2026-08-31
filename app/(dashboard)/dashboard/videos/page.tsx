@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import VideoUploader from '@/components/dashboard/VideoUploader'
 import VideoCard from '@/components/dashboard/VideoCard'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Clapperboard } from 'lucide-react'
 import type { Video } from '@/lib/types'
 
 export default async function VideosPage() {
@@ -19,8 +21,8 @@ export default async function VideosPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">Vidéos</h1>
-        <p className="text-slate-400 mt-1">Upload et gère tes vidéos avant publication</p>
+        <h1 className="text-2xl font-bold text-foreground">Vidéos</h1>
+        <p className="text-muted-foreground mt-1">Upload et gère tes vidéos avant publication</p>
       </div>
 
       <div className="mb-8">
@@ -34,10 +36,11 @@ export default async function VideosPage() {
           ))}
         </div>
       ) : (
-        <div className="bg-slate-900 border border-dashed border-white/10 rounded-xl p-12 text-center">
-          <div className="text-4xl mb-3">🎬</div>
-          <p className="text-slate-400">Aucune vidéo pour le moment.</p>
-        </div>
+        <EmptyState
+          icon={Clapperboard}
+          title="Aucune vidéo pour le moment."
+          description="Glisse une vidéo dans la zone ci-dessus pour l'uploader vers Cloudflare R2."
+        />
       )}
     </div>
   )
