@@ -47,6 +47,7 @@ export default function ScheduleDialog({ videos, accounts }: Props) {
   const isTikTok = selectedAccount?.platform === 'tiktok'
 
   useEffect(() => {
+    let cancelled = false
     setCreatorInfo(null)
     setPrivacyLevel('')
     setAllowDuet(false)
@@ -61,13 +62,23 @@ export default function ScheduleDialog({ videos, accounts }: Props) {
     fetch(`/api/tiktok/creator-info?account_id=${selectedAccount.id}`)
       .then((res) => res.json())
       .then((json: ApiResponse<TikTokCreatorInfo>) => {
+        if (cancelled) return
         if (json.error) {
           toast.error(json.error)
           return
         }
         setCreatorInfo(json.data)
       })
-      .finally(() => setLoadingCreatorInfo(false))
+      .catch(() => {
+        if (!cancelled) toast.error('Impossible de charger les réglages TikTok')
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingCreatorInfo(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
   }, [accountId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const durationTooLong =
