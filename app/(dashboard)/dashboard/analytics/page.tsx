@@ -100,7 +100,7 @@ export default async function AnalyticsPage() {
             {failedJobs.map((job: any) => (
               <div key={job.id} className="px-5 py-4">
                 <p className="text-sm text-foreground font-medium">{job.video?.title}</p>
-                <p className="text-xs text-red-500 mt-0.5">{job.error_message ?? 'Erreur inconnue'}</p>
+                <p className="text-xs text-destructive mt-0.5">{job.error_message ?? 'Erreur inconnue'}</p>
               </div>
             ))}
           </div>
