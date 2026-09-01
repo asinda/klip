@@ -59,9 +59,20 @@ export interface PublishJob {
   platform_post_id: string | null
   retry_count: number
   created_at: string
+  tiktok_privacy_level: string | null
+  tiktok_disable_duet: boolean
+  tiktok_disable_stitch: boolean
+  tiktok_disable_comment: boolean
+  tiktok_branded_content: boolean
   // joined
   video?: Video
   account?: SocialAccount
+}
+
+export interface YouTubeQuotaUsage {
+  org_id: string
+  date: string
+  units_used: number
 }
 
 export type ApiResponse<T> = {
