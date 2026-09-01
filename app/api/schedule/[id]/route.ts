@@ -14,7 +14,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
   const { data: job } = await supabase
     .from('publish_jobs')
-    .select('id, video:videos!inner(org_id)')
+    .select('id, video_id, video:videos!inner(org_id)')
     .eq('id', params.id)
     .eq('video.org_id', orgId)
     .single()
@@ -28,6 +28,15 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   if (error) {
     console.error('[DELETE /api/schedule/:id] failed:', error)
     return NextResponse.json<ApiResponse<null>>({ data: null, error: "Erreur lors de l'annulation" }, { status: 500 })
+  }
+
+  const { error: videoUpdateError } = await supabase
+    .from('videos')
+    .update({ status: 'uploaded' })
+    .eq('id', job.video_id)
+
+  if (videoUpdateError) {
+    console.error('[DELETE /api/schedule/:id] video status revert failed:', videoUpdateError)
   }
 
   return NextResponse.json<ApiResponse<null>>({ data: null, error: null })
