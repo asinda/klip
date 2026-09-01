@@ -1,6 +1,6 @@
 // app/api/schedule/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { getCurrentUserRow } from '@/lib/supabase/dev-org'
 import { enqueuePublishJob } from '@/lib/queue/publish-queue'
 import {
@@ -118,7 +118,9 @@ export async function POST(request: NextRequest) {
   if (account.platform === 'youtube') {
     // The 10 000 units/day cap belongs to the shared Google Cloud project, so
     // the check has to be against every org's usage combined, not just this one.
-    const unitsUsedToday = await getYouTubeQuotaUsageGlobal(supabase)
+    // Service-role client for this read only: RLS would silently scope the "global" sum down to the caller's own org and defeat the project-wide check (an aggregate comes back, never other orgs' rows).
+    const serviceSupabase = createServiceClient()
+    const unitsUsedToday = await getYouTubeQuotaUsageGlobal(serviceSupabase)
     if (wouldExceedYouTubeQuota(unitsUsedToday, YOUTUBE_UPLOAD_UNIT_COST)) {
       return NextResponse.json<ApiResponse<null>>(
         { data: null, error: "Quota YouTube quotidien atteint pour aujourd'hui — réessaie demain" },
