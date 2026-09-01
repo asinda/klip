@@ -11,6 +11,7 @@ export interface TikTokPostOptions {
   disableDuet: boolean
   disableStitch: boolean
   disableComment: boolean
+  isBrandedContent: boolean
 }
 
 export async function uploadVideoToTikTok(
@@ -32,6 +33,11 @@ export async function uploadVideoToTikTok(
         disable_duet: options.disableDuet,
         disable_comment: options.disableComment,
         disable_stitch: options.disableStitch,
+        // TikTok splits branded content into paid partnership (brand_content_toggle)
+        // and organic brand promotion (brand_organic_toggle). The composer asks a
+        // single "Contenu de marque" yes/no, so both carry the same value.
+        brand_content_toggle: options.isBrandedContent,
+        brand_organic_toggle: options.isBrandedContent,
       },
       source_info: {
         source: 'PULL_FROM_URL',

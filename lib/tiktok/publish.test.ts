@@ -1,7 +1,13 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { uploadVideoToTikTok, getTikTokPublishStatus } from './publish'
 
-const OPTIONS = { privacyLevel: 'SELF_ONLY', disableDuet: true, disableStitch: true, disableComment: true }
+const OPTIONS = {
+  privacyLevel: 'SELF_ONLY',
+  disableDuet: true,
+  disableStitch: true,
+  disableComment: true,
+  isBrandedContent: false,
+}
 
 describe('uploadVideoToTikTok', () => {
   afterEach(() => {
@@ -43,6 +49,21 @@ describe('uploadVideoToTikTok', () => {
 
     const body = JSON.parse(mockFetch.mock.calls[0][1].body)
     expect(body.post_info.disable_duet).toBe(false)
+  })
+
+  it('sets both TikTok branded-content toggles when the post is branded content', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ data: { publish_id: 'pub_789' }, error: { code: 'ok' } }),
+    })
+    vi.stubGlobal('fetch', mockFetch)
+
+    await uploadVideoToTikTok('token', 'https://r2.example/v.mp4', 'caption', { ...OPTIONS, isBrandedContent: true })
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body)
+    expect(body.post_info.brand_content_toggle).toBe(true)
+    expect(body.post_info.brand_organic_toggle).toBe(true)
   })
 
   it('throws with the TikTok error message when the API rejects the request', async () => {

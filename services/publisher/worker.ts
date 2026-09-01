@@ -65,6 +65,7 @@ async function processJob(job: Job<PublishJobData>): Promise<void> {
       disableDuet: publishJob.tiktok_disable_duet,
       disableStitch: publishJob.tiktok_disable_stitch,
       disableComment: publishJob.tiktok_disable_comment,
+      isBrandedContent: publishJob.tiktok_branded_content,
     })
 
     let finalStatus = 'PROCESSING_UPLOAD'
