@@ -60,7 +60,12 @@ async function processJob(job: Job<PublishJobData>): Promise<void> {
         .eq('id', publishJob.account_id)
     }
 
-    const { publishId } = await uploadVideoToTikTok(accessToken, publishJob.video.r2_url, publishJob.video.title)
+    const { publishId } = await uploadVideoToTikTok(accessToken, publishJob.video.r2_url, publishJob.video.title, {
+      privacyLevel: publishJob.tiktok_privacy_level,
+      disableDuet: publishJob.tiktok_disable_duet,
+      disableStitch: publishJob.tiktok_disable_stitch,
+      disableComment: publishJob.tiktok_disable_comment,
+    })
 
     let finalStatus = 'PROCESSING_UPLOAD'
     for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
