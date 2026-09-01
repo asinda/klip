@@ -17,6 +17,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     .select('id, video_id, video:videos!inner(org_id)')
     .eq('id', params.id)
     .eq('video.org_id', orgId)
+    .eq('status', 'pending')
     .single()
 
   if (!job) {
