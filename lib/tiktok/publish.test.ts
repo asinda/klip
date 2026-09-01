@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { uploadVideoToTikTok, getTikTokPublishStatus } from './publish'
 
+const OPTIONS = { privacyLevel: 'SELF_ONLY', disableDuet: true, disableStitch: true, disableComment: true }
+
 describe('uploadVideoToTikTok', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
   })
 
-  it('sends PULL_FROM_URL source info and returns the publish id on success', async () => {
+  it('sends PULL_FROM_URL source info and the given post options, returns the publish id on success', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -14,7 +16,7 @@ describe('uploadVideoToTikTok', () => {
     })
     vi.stubGlobal('fetch', mockFetch)
 
-    const result = await uploadVideoToTikTok('token-abc', 'https://r2.example/video.mp4', 'My caption')
+    const result = await uploadVideoToTikTok('token-abc', 'https://r2.example/video.mp4', 'My caption', OPTIONS)
 
     expect(result).toEqual({ publishId: 'pub_123' })
     const [url, init] = mockFetch.mock.calls[0]
@@ -23,6 +25,24 @@ describe('uploadVideoToTikTok', () => {
     const body = JSON.parse(init.body)
     expect(body.source_info).toEqual({ source: 'PULL_FROM_URL', video_url: 'https://r2.example/video.mp4' })
     expect(body.post_info.title).toBe('My caption')
+    expect(body.post_info.privacy_level).toBe('SELF_ONLY')
+    expect(body.post_info.disable_duet).toBe(true)
+    expect(body.post_info.disable_stitch).toBe(true)
+    expect(body.post_info.disable_comment).toBe(true)
+  })
+
+  it('passes through a caller-chosen non-default option (e.g. duet allowed)', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ data: { publish_id: 'pub_456' }, error: { code: 'ok' } }),
+    })
+    vi.stubGlobal('fetch', mockFetch)
+
+    await uploadVideoToTikTok('token', 'https://r2.example/v.mp4', 'caption', { ...OPTIONS, disableDuet: false })
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body)
+    expect(body.post_info.disable_duet).toBe(false)
   })
 
   it('throws with the TikTok error message when the API rejects the request', async () => {
@@ -35,7 +55,7 @@ describe('uploadVideoToTikTok', () => {
       })
     )
 
-    await expect(uploadVideoToTikTok('token', '', 'caption')).rejects.toThrow('video_url is required')
+    await expect(uploadVideoToTikTok('token', '', 'caption', OPTIONS)).rejects.toThrow('video_url is required')
   })
 })
 
