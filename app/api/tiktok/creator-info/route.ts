@@ -34,7 +34,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json<ApiResponse<TikTokCreatorInfo>>({ data: creatorInfo, error: null })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Erreur inconnue'
+    // Log the real upstream message, return a fixed one: TikTok's raw errors
+    // can leak token/account details and are meaningless to the end user.
     console.error('[GET /api/tiktok/creator-info] failed:', message)
-    return NextResponse.json<ApiResponse<null>>({ data: null, error: message }, { status: 502 })
+    return NextResponse.json<ApiResponse<null>>(
+      { data: null, error: 'Erreur lors de la récupération des réglages TikTok' },
+      { status: 502 }
+    )
   }
 }
