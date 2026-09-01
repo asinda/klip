@@ -4,13 +4,11 @@ import VideoCard from '@/components/dashboard/VideoCard'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Clapperboard } from 'lucide-react'
 import type { Video } from '@/lib/types'
+import { getCurrentUserRow } from '@/lib/supabase/dev-org'
 
 export default async function VideosPage() {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  const { data: userData } = await supabase
-    .from('users').select('org_id').eq('id', user!.id).single()
+  const { data: userData } = await getCurrentUserRow(supabase, 'org_id')
 
   const { data: videos } = await supabase
     .from('videos')

@@ -7,16 +7,11 @@ import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { getJobStatusBadge } from '@/lib/status'
 import { EmptyState } from '@/components/ui/empty-state'
+import { getCurrentUserRow } from '@/lib/supabase/dev-org'
 
 export default async function DashboardPage() {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  const { data: userData } = await supabase
-    .from('users')
-    .select('org_id')
-    .eq('id', user!.id)
-    .single()
+  const { data: userData } = await getCurrentUserRow(supabase, 'org_id')
 
   const orgId = userData?.org_id
 
