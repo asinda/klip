@@ -4,13 +4,11 @@ import AccountCard from '@/components/dashboard/AccountCard'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Plug } from 'lucide-react'
 import type { SocialAccount } from '@/lib/types'
+import { getCurrentUserRow } from '@/lib/supabase/dev-org'
 
 export default async function AccountsPage() {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  const { data: userData } = await supabase
-    .from('users').select('org_id').eq('id', user!.id).single()
+  const { data: userData } = await getCurrentUserRow(supabase, 'org_id')
 
   const { data: accounts } = await supabase
     .from('social_accounts')
