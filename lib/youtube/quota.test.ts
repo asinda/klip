@@ -1,13 +1,15 @@
 import { describe, it, expect } from 'vitest'
-import { todayUtcDateKey, wouldExceedYouTubeQuota, YOUTUBE_DAILY_UNIT_QUOTA, YOUTUBE_UPLOAD_UNIT_COST } from './quota'
+import { todayPacificDateKey, wouldExceedYouTubeQuota, YOUTUBE_DAILY_UNIT_QUOTA, YOUTUBE_UPLOAD_UNIT_COST } from './quota'
 
-describe('todayUtcDateKey', () => {
-  it('formats a date as YYYY-MM-DD in UTC', () => {
-    expect(todayUtcDateKey(new Date('2026-09-01T23:59:00Z'))).toBe('2026-09-01')
+describe('todayPacificDateKey', () => {
+  it('formats a date as YYYY-MM-DD in Pacific Time', () => {
+    // September = PDT (UTC-7): 23:59 UTC is 16:59 PT the same calendar day.
+    expect(todayPacificDateKey(new Date('2026-09-01T23:59:00Z'))).toBe('2026-09-01')
   })
 
-  it('does not roll over based on local time zone offsets', () => {
-    expect(todayUtcDateKey(new Date('2026-01-05T00:00:00Z'))).toBe('2026-01-05')
+  it('converts to Pacific Time, which can land on a different calendar day than UTC', () => {
+    // January = PST (UTC-8): 00:00 UTC is 16:00 PT the PREVIOUS day.
+    expect(todayPacificDateKey(new Date('2026-01-05T00:00:00Z'))).toBe('2026-01-04')
   })
 })
 
