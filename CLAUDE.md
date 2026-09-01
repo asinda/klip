@@ -241,3 +241,4 @@ type ApiResponse<T> = {
 - En cours : migration vers stack cloud (Supabase + Upstash + R2)
 - Bloquant : approbation TikTok Developer App (2-3 jours)
 - Prochaine étape : setup infra cloud + dashboard Next.js
+- Publication TikTok : privacy_level actuellement fixé à SELF_ONLY (app TikTok non auditée) — à revoir une fois l'app approuvée pour du posting public

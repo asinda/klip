@@ -6,6 +6,14 @@ export interface TikTokPublishResult {
 
 export type TikTokPublishStatus = 'PROCESSING_UPLOAD' | 'PROCESSING_DOWNLOAD' | 'PUBLISH_COMPLETE' | 'FAILED'
 
+// TikTok requires an explicit privacy_level for every post. 'SELF_ONLY' is used
+// deliberately while this app's TikTok Developer App is unaudited — TikTok
+// restricts unaudited apps to private/self-only posting. This MUST be revisited
+// (likely made configurable, or set to a public level) once the app is approved
+// for public posting, or every "published" video will be invisible to anyone
+// but the connected account's owner.
+const TIKTOK_POST_PRIVACY_LEVEL = 'SELF_ONLY'
+
 export async function uploadVideoToTikTok(
   accessToken: string,
   videoUrl: string,
@@ -20,7 +28,7 @@ export async function uploadVideoToTikTok(
     body: JSON.stringify({
       post_info: {
         title: caption,
-        privacy_level: 'SELF_ONLY',
+        privacy_level: TIKTOK_POST_PRIVACY_LEVEL,
         disable_duet: false,
         disable_comment: false,
         disable_stitch: false,
