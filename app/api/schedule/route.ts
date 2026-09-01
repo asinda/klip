@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentUserRow } from '@/lib/supabase/dev-org'
+import { enqueuePublishJob } from '@/lib/queue/publish-queue'
 import type { ApiResponse, PublishJob } from '@/lib/types'
 
 interface CreateScheduleBody {
@@ -75,6 +76,12 @@ export async function POST(request: NextRequest) {
 
   if (updateError) {
     console.error('[POST /api/schedule] video status update failed:', updateError)
+  }
+
+  try {
+    await enqueuePublishJob(job.id, job.scheduled_at)
+  } catch (queueError) {
+    console.error('[POST /api/schedule] enqueue failed (job row still created):', queueError)
   }
 
   return NextResponse.json<ApiResponse<PublishJob>>({ data: job, error: null })
