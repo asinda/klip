@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
   try {
     await enqueuePublishJob(job.id, job.scheduled_at)
   } catch (queueError) {
-    console.error('[POST /api/schedule] enqueue failed (job row still created):', queueError)
+    console.error(`[POST /api/schedule] enqueue failed for job ${job.id} (row still created):`, queueError)
   }
 
   return NextResponse.json<ApiResponse<PublishJob>>({ data: job, error: null })
