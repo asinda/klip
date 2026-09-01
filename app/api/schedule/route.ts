@@ -3,8 +3,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentUserRow } from '@/lib/supabase/dev-org'
 import { enqueuePublishJob } from '@/lib/queue/publish-queue'
-import { getYouTubeQuotaUsage, wouldExceedYouTubeQuota, YOUTUBE_UPLOAD_UNIT_COST } from '@/lib/youtube/quota'
-import { TIKTOK_PRIVACY_LEVELS } from '@/lib/tiktok/creator-info'
+import {
+  getYouTubeQuotaUsageGlobal,
+  incrementYouTubeQuotaUsage,
+  wouldExceedYouTubeQuota,
+  YOUTUBE_UPLOAD_UNIT_COST,
+} from '@/lib/youtube/quota'
+import { getTikTokCreatorInfo, TIKTOK_PRIVACY_LEVELS } from '@/lib/tiktok/creator-info'
 import type { ApiResponse, PublishJob } from '@/lib/types'
 
 interface CreateScheduleBody {
@@ -40,7 +45,7 @@ export async function POST(request: NextRequest) {
 
   const { data: video } = await supabase
     .from('videos')
-    .select('id')
+    .select('id, duration')
     .eq('id', body.video_id)
     .eq('org_id', orgId)
     .single()
@@ -51,7 +56,7 @@ export async function POST(request: NextRequest) {
 
   const { data: account } = await supabase
     .from('social_accounts')
-    .select('id, platform')
+    .select('id, platform, access_token')
     .eq('id', body.account_id)
     .eq('org_id', orgId)
     .single()
@@ -74,6 +79,35 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // The TikTok audit requires the constraints the API returns to be actually
+    // enforced, not just displayed: re-check the user's choice against the
+    // creator's real options server-side, since the browser can be bypassed.
+    let creatorInfo
+    try {
+      creatorInfo = await getTikTokCreatorInfo(account.access_token)
+    } catch (creatorInfoError) {
+      console.error('[POST /api/schedule] creator info fetch failed:', creatorInfoError)
+      return NextResponse.json<ApiResponse<null>>(
+        { data: null, error: 'Impossible de vérifier les contraintes TikTok' },
+        { status: 502 }
+      )
+    }
+
+    if (!creatorInfo.privacyLevelOptions.includes(body.privacy_level)) {
+      return NextResponse.json<ApiResponse<null>>(
+        { data: null, error: 'Confidentialité non disponible pour ce compte' },
+        { status: 400 }
+      )
+    }
+
+    if (video.duration != null && video.duration > creatorInfo.maxVideoPostDurationSec) {
+      return NextResponse.json<ApiResponse<null>>(
+        { data: null, error: 'Vidéo trop longue pour ce compte TikTok' },
+        { status: 400 }
+      )
+    }
+
     insertPayload.tiktok_privacy_level = body.privacy_level
     insertPayload.tiktok_disable_duet = body.disable_duet ?? true
     insertPayload.tiktok_disable_stitch = body.disable_stitch ?? true
@@ -82,7 +116,9 @@ export async function POST(request: NextRequest) {
   }
 
   if (account.platform === 'youtube') {
-    const unitsUsedToday = await getYouTubeQuotaUsage(supabase, orgId)
+    // The 10 000 units/day cap belongs to the shared Google Cloud project, so
+    // the check has to be against every org's usage combined, not just this one.
+    const unitsUsedToday = await getYouTubeQuotaUsageGlobal(supabase)
     if (wouldExceedYouTubeQuota(unitsUsedToday, YOUTUBE_UPLOAD_UNIT_COST)) {
       return NextResponse.json<ApiResponse<null>>(
         { data: null, error: "Quota YouTube quotidien atteint pour aujourd'hui — réessaie demain" },
@@ -105,6 +141,18 @@ export async function POST(request: NextRequest) {
 
   if (updateError) {
     console.error('[POST /api/schedule] video status update failed:', updateError)
+  }
+
+  // Reserve the upload cost at schedule-time: there is no YouTube publish
+  // worker yet (that's a later phase), so the counter has to be moved here or
+  // it never moves at all. Same optimistic model as the videos.status update
+  // just above, which also runs before anything is actually published.
+  if (account.platform === 'youtube') {
+    try {
+      await incrementYouTubeQuotaUsage(supabase, orgId, YOUTUBE_UPLOAD_UNIT_COST)
+    } catch (quotaError) {
+      console.error(`[POST /api/schedule] failed to record YouTube quota usage for job ${job.id}:`, quotaError)
+    }
   }
 
   try {
