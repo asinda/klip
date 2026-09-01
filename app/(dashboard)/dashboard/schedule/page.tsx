@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentUserRow } from '@/lib/supabase/dev-org'
-import { getWeekDays, groupJobsByDate } from '@/lib/schedule'
+import { getWeekDays, groupJobsByDate, formatDateKey } from '@/lib/schedule'
 import ScheduleDialog from '@/components/dashboard/ScheduleDialog'
 import ScheduleJobCard, { type ScheduleJobCardJob } from '@/components/dashboard/ScheduleJobCard'
 import { Card } from '@/components/ui/card'
@@ -20,6 +20,7 @@ export default async function SchedulePage() {
       .from('publish_jobs')
       .select('id, scheduled_at, video:videos!inner(title, org_id), account:social_accounts(platform, username)')
       .eq('video.org_id', orgId)
+      .eq('status', 'pending')
       .order('scheduled_at', { ascending: true }),
   ])
 
@@ -51,7 +52,7 @@ export default async function SchedulePage() {
         </div>
         <div className="grid grid-cols-7 min-h-[240px]">
           {weekDays.map((day, i) => {
-            const key = day.toISOString().slice(0, 10)
+            const key = formatDateKey(day)
             const dayJobs = (jobsByDate[key] ?? []) as unknown as ScheduleJobCardJob[]
             return (
               <div key={i} className="p-2 border-r border-border last:border-r-0 flex flex-col gap-2">

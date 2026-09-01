@@ -39,11 +39,11 @@ describe('getWeekDays', () => {
 })
 
 describe('groupJobsByDate', () => {
-  it('groups jobs by their UTC calendar date', () => {
+  it('groups jobs by their local calendar date', () => {
     const jobs = [
-      { id: '1', scheduled_at: '2026-09-02T14:00:00.000Z' },
-      { id: '2', scheduled_at: '2026-09-02T09:00:00.000Z' },
-      { id: '3', scheduled_at: '2026-09-03T10:00:00.000Z' },
+      { id: '1', scheduled_at: '2026-09-02T12:00:00.000Z' },
+      { id: '2', scheduled_at: '2026-09-02T13:00:00.000Z' },
+      { id: '3', scheduled_at: '2026-09-03T12:00:00.000Z' },
     ]
     const grouped = groupJobsByDate(jobs)
     expect(Object.keys(grouped).sort()).toEqual(['2026-09-02', '2026-09-03'])
@@ -53,5 +53,18 @@ describe('groupJobsByDate', () => {
 
   it('returns an empty object for an empty list', () => {
     expect(groupJobsByDate([])).toEqual({})
+  })
+
+  it('groups a late-UTC timestamp under the correct LOCAL date in a large positive-offset timezone (regression test for the original bug)', () => {
+    const originalTZ = process.env.TZ
+    process.env.TZ = 'Pacific/Auckland' // UTC+12/+13 — large positive offset
+    try {
+      // 2026-09-02T23:00:00Z is already 2026-09-03 local time in Auckland
+      const jobs = [{ id: '1', scheduled_at: '2026-09-02T23:00:00.000Z' }]
+      const grouped = groupJobsByDate(jobs)
+      expect(Object.keys(grouped)).toEqual(['2026-09-03'])
+    } finally {
+      process.env.TZ = originalTZ
+    }
   })
 })

@@ -12,9 +12,16 @@ export function getWeekDays(referenceDate: Date): Date[] {
   })
 }
 
+export function formatDateKey(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 export function groupJobsByDate<T extends { scheduled_at: string }>(jobs: T[]): Record<string, T[]> {
   return jobs.reduce((acc, job) => {
-    const key = job.scheduled_at.slice(0, 10)
+    const key = formatDateKey(new Date(job.scheduled_at))
     if (!acc[key]) acc[key] = []
     acc[key].push(job)
     return acc
