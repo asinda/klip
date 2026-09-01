@@ -81,7 +81,7 @@ async function processJob(job: Job<PublishJobData>): Promise<void> {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Erreur inconnue'
     console.error(`[worker] publish job ${publishJobId} failed:`, message)
-    await supabase
+    const { error: jobUpdateError } = await supabase
       .from('publish_jobs')
       .update({
         status: 'failed',
@@ -89,6 +89,9 @@ async function processJob(job: Job<PublishJobData>): Promise<void> {
         retry_count: (publishJob.retry_count ?? 0) + 1,
       })
       .eq('id', publishJobId)
+    if (jobUpdateError) {
+      console.error(`[worker] publish job ${publishJobId} failed to persist failure status:`, jobUpdateError)
+    }
     await supabase.from('videos').update({ status: 'failed' }).eq('id', publishJob.video.id)
   }
 }
