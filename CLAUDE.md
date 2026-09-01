@@ -215,7 +215,7 @@ type ApiResponse<T> = {
 ## 🚨 Règles Importantes
 
 1. **Ne jamais commiter** les fichiers `.env` ou credentials
-2. **Un projet Google Cloud par chaîne YouTube** (quota API)
+2. **Un seul projet Google Cloud partagé pour YouTube** — le quota (10 000 units/jour) est mutualisé par projet, pas par chaîne ; l'isolation entre orgs se fait via `lib/youtube/quota.ts` (compteur par org_id dans `youtube_quota_usage`), pas via un projet GCP par client
 3. **Rate limit TikTok** : max 6 req/min → toujours passer par la queue
 4. **Vidéos TikTok** : 60s minimum pour le Creativity Program
 5. **Vidéos YouTube** : 10min minimum pour la monétisation YPP
@@ -243,3 +243,4 @@ type ApiResponse<T> = {
 - Prochaine étape : setup infra cloud + dashboard Next.js
 - Publication TikTok : privacy_level actuellement fixé à SELF_ONLY (app TikTok non auditée) — à revoir une fois l'app approuvée pour du posting public
 - Points de vigilance identifiés pour l'audit "Direct Post" (issus de rejets réels documentés sur un projet open-source équivalent, avril/mai 2026) : le composer doit afficher le nom/avatar du créateur connecté, le champ de confidentialité (privacy_level) doit être un menu déroulant sans valeur par défaut choisie par l'app, les toggles duet/stitch/commentaires doivent être décochés par défaut (opt-in utilisateur), un toggle "Branded Content" doit être présent, les contraintes renvoyées par l'API (durée max vidéo, etc.) doivent être réellement appliquées dans l'UI, et il faut une confirmation explicite + un suivi du statut de publication visible pour l'utilisateur. Prévoir la vidéo de démo du flow complet (login → consentement → composer → publication) avant soumission.
+- Composer TikTok mis à jour pour respecter les exigences UX de l'audit "Direct Post" (affichage créateur, choix de confidentialité sans défaut, toggles d'interaction opt-in, disclosure Branded Content, durée max appliquée, confirmation explicite) — voir `components/dashboard/ScheduleDialog.tsx`. Reste à faire avant soumission : enregistrer la vidéo de démo du flow complet et soumettre l'audit (étapes manuelles, hors code).
