@@ -239,6 +239,7 @@ type ApiResponse<T> = {
 
 - Prototype v1 : publisher TikTok multi-comptes fonctionnel (stack locale)
 - En cours : migration vers stack cloud (Supabase + Upstash + R2)
-- Bloquant : approbation TikTok Developer App (2-3 jours)
+- Bloquant : approbation TikTok Developer App — **planning révisé (recherche 2026-09) : compter 4 à 8 semaines, avec au moins un cycle de rejet/resoumission** (le chiffre initial de "2-3 jours" n'était pas fiable ; l'API "unaudited" reste utilisable en attendant, mais force tous les posts en `SELF_ONLY`, donc invendable en l'état à un client agence). Voir points de vigilance ci-dessous.
 - Prochaine étape : setup infra cloud + dashboard Next.js
 - Publication TikTok : privacy_level actuellement fixé à SELF_ONLY (app TikTok non auditée) — à revoir une fois l'app approuvée pour du posting public
+- Points de vigilance identifiés pour l'audit "Direct Post" (issus de rejets réels documentés sur un projet open-source équivalent, avril/mai 2026) : le composer doit afficher le nom/avatar du créateur connecté, le champ de confidentialité (privacy_level) doit être un menu déroulant sans valeur par défaut choisie par l'app, les toggles duet/stitch/commentaires doivent être décochés par défaut (opt-in utilisateur), un toggle "Branded Content" doit être présent, les contraintes renvoyées par l'API (durée max vidéo, etc.) doivent être réellement appliquées dans l'UI, et il faut une confirmation explicite + un suivi du statut de publication visible pour l'utilisateur. Prévoir la vidéo de démo du flow complet (login → consentement → composer → publication) avant soumission.
