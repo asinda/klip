@@ -90,6 +90,15 @@ export default function LandingPage() {
           </div>
         </div>
       </main>
+
+      <footer className="max-w-6xl mx-auto px-8 py-8 flex items-center justify-center gap-6 text-sm text-slate-400 border-t border-white/10">
+        <Link href="/privacy" className="hover:text-white transition-colors">
+          Politique de confidentialité
+        </Link>
+        <Link href="/terms" className="hover:text-white transition-colors">
+          Conditions d'utilisation
+        </Link>
+      </footer>
     </div>
   )
 }
