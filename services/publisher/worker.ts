@@ -7,6 +7,8 @@ import { PUBLISH_QUEUE_NAME } from '../../lib/queue/publish-queue'
 import { createServiceClient } from '../../lib/supabase/server'
 import { refreshTikTokToken } from '../../lib/tiktok/oauth'
 import { uploadVideoToTikTok, getTikTokPublishStatus } from '../../lib/tiktok/publish'
+import { refreshLinkedInToken } from '../../lib/linkedin/oauth'
+import { uploadVideoToLinkedIn, createLinkedInPost } from '../../lib/linkedin/publish'
 
 interface PublishJobData {
   publishJobId: string
@@ -22,7 +24,7 @@ async function processJob(job: Job<PublishJobData>): Promise<void> {
   const { data: publishJob, error: fetchError } = await supabase
     .from('publish_jobs')
     .select(
-      '*, video:videos(id, r2_url, title), account:social_accounts(access_token, refresh_token, token_expires_at, platform)'
+      '*, video:videos(id, r2_url, title, file_size), account:social_accounts(access_token, refresh_token, token_expires_at, platform, account_id)'
     )
     .eq('id', publishJobId)
     .single()
@@ -32,8 +34,8 @@ async function processJob(job: Job<PublishJobData>): Promise<void> {
     return
   }
 
-  if (publishJob.account.platform !== 'tiktok') {
-    console.log(`[worker] skipping non-TikTok job ${publishJobId} (platform: ${publishJob.account.platform})`)
+  if (publishJob.account.platform !== 'tiktok' && publishJob.account.platform !== 'linkedin') {
+    console.log(`[worker] skipping job ${publishJobId} (platform: ${publishJob.account.platform} not yet supported by the worker)`)
     return
   }
 
@@ -46,42 +48,73 @@ async function processJob(job: Job<PublishJobData>): Promise<void> {
       : false
 
     if (tokenExpired && publishJob.account.refresh_token) {
-      const refreshed = await refreshTikTokToken(publishJob.account.refresh_token)
-      accessToken = refreshed.access_token
-      // Persist immediately: if TikTok rotates the refresh_token (single-use),
-      // failing to save it here breaks every future refresh for this account.
-      await supabase
-        .from('social_accounts')
-        .update({
-          access_token: refreshed.access_token,
-          refresh_token: refreshed.refresh_token,
-          token_expires_at: new Date(Date.now() + refreshed.expires_in * 1000).toISOString(),
-        })
-        .eq('id', publishJob.account_id)
+      if (publishJob.account.platform === 'tiktok') {
+        const refreshed = await refreshTikTokToken(publishJob.account.refresh_token)
+        accessToken = refreshed.access_token
+        // Persist immediately: if TikTok rotates the refresh_token (single-use),
+        // failing to save it here breaks every future refresh for this account.
+        await supabase
+          .from('social_accounts')
+          .update({
+            access_token: refreshed.access_token,
+            refresh_token: refreshed.refresh_token,
+            token_expires_at: new Date(Date.now() + refreshed.expires_in * 1000).toISOString(),
+          })
+          .eq('id', publishJob.account_id)
+      } else {
+        const refreshed = await refreshLinkedInToken(publishJob.account.refresh_token)
+        accessToken = refreshed.access_token
+        await supabase
+          .from('social_accounts')
+          .update({
+            access_token: refreshed.access_token,
+            token_expires_at: new Date(Date.now() + refreshed.expires_in * 1000).toISOString(),
+          })
+          .eq('id', publishJob.account_id)
+      }
     }
 
-    const { publishId } = await uploadVideoToTikTok(accessToken, publishJob.video.r2_url, publishJob.video.title, {
-      privacyLevel: publishJob.tiktok_privacy_level,
-      disableDuet: publishJob.tiktok_disable_duet,
-      disableStitch: publishJob.tiktok_disable_stitch,
-      disableComment: publishJob.tiktok_disable_comment,
-      isBrandedContent: publishJob.tiktok_branded_content,
-    })
+    let platformPostId: string
 
-    let finalStatus = 'PROCESSING_UPLOAD'
-    for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
-      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS))
-      finalStatus = await getTikTokPublishStatus(accessToken, publishId)
-      if (finalStatus === 'PUBLISH_COMPLETE' || finalStatus === 'FAILED') break
-    }
+    if (publishJob.account.platform === 'tiktok') {
+      const { publishId } = await uploadVideoToTikTok(accessToken, publishJob.video.r2_url, publishJob.video.title, {
+        privacyLevel: publishJob.tiktok_privacy_level,
+        disableDuet: publishJob.tiktok_disable_duet,
+        disableStitch: publishJob.tiktok_disable_stitch,
+        disableComment: publishJob.tiktok_disable_comment,
+        isBrandedContent: publishJob.tiktok_branded_content,
+      })
 
-    if (finalStatus !== 'PUBLISH_COMPLETE') {
-      throw new Error(`TikTok publish did not complete in time (last status: ${finalStatus})`)
+      let finalStatus = 'PROCESSING_UPLOAD'
+      for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS))
+        finalStatus = await getTikTokPublishStatus(accessToken, publishId)
+        if (finalStatus === 'PUBLISH_COMPLETE' || finalStatus === 'FAILED') break
+      }
+
+      if (finalStatus !== 'PUBLISH_COMPLETE') {
+        throw new Error(`TikTok publish did not complete in time (last status: ${finalStatus})`)
+      }
+
+      platformPostId = publishId
+    } else {
+      if (publishJob.video.file_size == null) {
+        throw new Error('Cannot publish to LinkedIn: video file_size is unknown')
+      }
+      const organizationUrn = `urn:li:organization:${publishJob.account.account_id}`
+      const { videoUrn } = await uploadVideoToLinkedIn(
+        accessToken,
+        organizationUrn,
+        publishJob.video.r2_url,
+        publishJob.video.file_size
+      )
+      const { postUrn } = await createLinkedInPost(accessToken, organizationUrn, videoUrn, publishJob.video.title)
+      platformPostId = postUrn
     }
 
     await supabase
       .from('publish_jobs')
-      .update({ status: 'published', published_at: new Date().toISOString(), platform_post_id: publishId })
+      .update({ status: 'published', published_at: new Date().toISOString(), platform_post_id: platformPostId })
       .eq('id', publishJobId)
     await supabase.from('videos').update({ status: 'published' }).eq('id', publishJob.video.id)
   } catch (err) {
