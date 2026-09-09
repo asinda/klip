@@ -11,15 +11,16 @@ export async function GET(request: NextRequest) {
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL!
 
+  const savedState = cookies().get('linkedin_oauth_state')?.value
+  cookies().delete('linkedin_oauth_state')
+
   if (error || !code) {
     return NextResponse.redirect(`${appUrl}/dashboard/accounts?error=linkedin_denied`)
   }
 
-  const savedState = cookies().get('linkedin_oauth_state')?.value
   if (!savedState || savedState !== state) {
     return NextResponse.redirect(`${appUrl}/dashboard/accounts?error=invalid_state`)
   }
-  cookies().delete('linkedin_oauth_state')
 
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
