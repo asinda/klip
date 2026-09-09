@@ -22,6 +22,7 @@ const VIDEO_STATUS_MAP: Record<VideoStatus, BadgeStyle> = {
 const PLATFORM_MAP: Record<Platform, BadgeStyle> = {
   tiktok: { label: 'TikTok', className: 'text-rose-600 dark:text-rose-400' },
   youtube: { label: 'YouTube', className: 'text-red-600 dark:text-red-400' },
+  linkedin: { label: 'LinkedIn', className: 'text-blue-700 dark:text-blue-400' },
 }
 
 export function getJobStatusBadge(status: JobStatus): BadgeStyle {

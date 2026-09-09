@@ -1,5 +1,5 @@
 export type Plan = 'starter' | 'agency' | 'white_label'
-export type Platform = 'tiktok' | 'youtube'
+export type Platform = 'tiktok' | 'youtube' | 'linkedin'
 export type VideoFormat = 'short' | 'long'
 export type VideoStatus = 'uploaded' | 'scheduled' | 'published' | 'failed'
 export type JobStatus = 'pending' | 'processing' | 'published' | 'failed'
